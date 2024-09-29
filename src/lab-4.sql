@@ -49,42 +49,50 @@ VALUES
 (35, 'Сервер DNS 1С', 'Xeon Е1220 (3,10GHz), 4GB, 2x500GB, DVD-RW', 5, NULL);
 
 -- 4. Схема связей
-
--- Между Computers и Comp_Types
+-- Первичные ключи
 ALTER TABLE Comp_Types
 ADD PRIMARY KEY (Type_ID);
+ALTER TABLE Part_Types
+ADD PRIMARY KEY (Type_ID);
+ALTER TABLE Computers
+ADD PRIMARY KEY (Comp_ID);
+ALTER TABLE Customers
+ADD PRIMARY KEY (Cust_ID);
+ALTER TABLE Orders
+ADD PRIMARY KEY (Ord_ID);
+ALTER TABLE Comp_Parts
+ADD PRIMARY KEY (Part_ID);
+-- Составные ключи
+ALTER TABLE Order_Items
+ADD PRIMARY KEY (Ord_ID, Comp_ID);
+ALTER TABLE Comp_Config
+ADD PRIMARY KEY (Comp_ID, Part_ID);
+
+-- Между Computers и Comp_Types
 ALTER TABLE Computers
 ADD CONSTRAINT FK_Comp_Types
 FOREIGN KEY (Type_ID) REFERENCES Comp_Types(Type_ID)
 ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- Между Comp_Parts и Part_Types
-ALTER TABLE Part_Types
-ADD PRIMARY KEY (Type_ID);
 ALTER TABLE Comp_Parts
 ADD CONSTRAINT FK_Part_Types
 FOREIGN KEY (Type_ID) REFERENCES Part_Types(Type_ID)
 ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- Между Comp_Config и Computers
-ALTER TABLE Computers
-ADD PRIMARY KEY (Comp_ID);
 ALTER TABLE Comp_Config
 ADD CONSTRAINT FK_Computers_Config
 FOREIGN KEY (Comp_ID) REFERENCES Computers(Comp_ID)
 ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- Между Customers и Orders
-ALTER TABLE Customers
-ADD PRIMARY KEY (Cust_ID);
 ALTER TABLE Orders
 ADD CONSTRAINT FK_Customers_Orders
 FOREIGN KEY (Cust_ID) REFERENCES Customers(Cust_ID)
 ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- Между Orders и Order_Items
-ALTER TABLE Orders
-ADD PRIMARY KEY (Ord_ID);
 ALTER TABLE Order_Items
 ADD CONSTRAINT FK_Orders_Items
 FOREIGN KEY (Ord_ID) REFERENCES Orders(Ord_ID)
@@ -97,7 +105,6 @@ FOREIGN KEY (Comp_ID) REFERENCES Computers(Comp_ID)
 ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- 5. Свой вариант: 6, 15, 20, 21, 29
-
 -- 6. Внесение в Comp_Config и Order_Items своего варианта
 -- Замена уже существующих записей на наши конфигурации
 SET SQL_SAFE_UPDATES = 0;
@@ -124,6 +131,11 @@ VALUES
 (29, 115, 1),
 (29, 118, 1),
 (29, 119, 1);
+
+-- Ошибка дублирования
+INSERT INTO Comp_Config (Comp_ID, Part_ID, Quantity)
+VALUES
+(29, 115, 1);
 
 -- Обновление Order_Items (замена на свой вариант)
 SET SQL_SAFE_UPDATES = 0;
@@ -152,6 +164,15 @@ VALUES
 -- 7. Удаление лишних записей из табл. Computers
 DELETE FROM Computers
 WHERE Comp_ID NOT IN (6, 15, 20, 21, 29);
+
+SET SQL_SAFE_UPDATES = 0;
+DELETE FROM Comp_Parts
+WHERE Part_ID NOT IN (
+    SELECT Part_ID
+    FROM Comp_Config
+    WHERE Comp_ID IN (6, 15, 20, 21, 29)
+);
+SET SQL_SAFE_UPDATES = 1;
 
 -- 8. Добавление поля Image в табл. Computers и Comp_Parts
 ALTER TABLE Computers
