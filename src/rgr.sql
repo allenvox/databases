@@ -3,9 +3,9 @@ USE clinic;
 
 CREATE TABLE Patients (
     Patient_ID INT PRIMARY KEY AUTO_INCREMENT,
-    First_Name VARCHAR(50),
-    Last_Name VARCHAR(50),
-    Date_of_Birth DATE,
+    First_Name VARCHAR(50) NOT NULL,
+    Last_Name VARCHAR(50) NOT NULL,
+    Date_of_Birth DATE NOT NULL,
     Phone VARCHAR(20),
     Email VARCHAR(100),
     Address VARCHAR(255)
@@ -13,9 +13,9 @@ CREATE TABLE Patients (
 
 CREATE TABLE Doctors (
     Doctor_ID INT PRIMARY KEY AUTO_INCREMENT,
-    First_Name VARCHAR(50),
-    Last_Name VARCHAR(50),
-    Specialty VARCHAR(100),
+    First_Name VARCHAR(50) NOT NULL,
+    Last_Name VARCHAR(50) NOT NULL,
+    Specialty VARCHAR(100) NOT NULL,
     Experience INT,
     Phone VARCHAR(20),
     Email VARCHAR(100)
@@ -23,14 +23,15 @@ CREATE TABLE Doctors (
 
 CREATE TABLE Services (
     Service_ID INT PRIMARY KEY AUTO_INCREMENT,
-    Service_Name VARCHAR(100),
-    Cost DECIMAL(10, 2),
+    Service_Name VARCHAR(100) NOT NULL,
+    Cost DECIMAL(10, 2) NOT NULL,
     Specialization VARCHAR(100)
 );
 
 CREATE TABLE Rooms (
     Room_ID INT PRIMARY KEY AUTO_INCREMENT,
-    Room_Number VARCHAR(10)
+    Room_Number VARCHAR(10) NOT NULL,
+    Room_Description VARCHAR(100)
 );
 
 CREATE TABLE Appointments (
@@ -38,8 +39,8 @@ CREATE TABLE Appointments (
     Patient_ID INT,
     Doctor_ID INT,
     Room_ID INT,
-    Appointment_Date DATE,
-    Appointment_Time TIME,
+    Appointment_Date DATE NOT NULL,
+    Appointment_Time TIME NOT NULL,
     FOREIGN KEY (Patient_ID) REFERENCES Patients(Patient_ID) ON DELETE CASCADE,
     FOREIGN KEY (Doctor_ID) REFERENCES Doctors(Doctor_ID) ON DELETE CASCADE,
     FOREIGN KEY (Room_ID) REFERENCES Rooms(Room_ID) ON DELETE CASCADE
@@ -122,18 +123,35 @@ VALUES
 (10, 5, 'Проверка зрения для подбора линз.');
 
 -- Список приёмов для конкретного пациента
-SELECT A.Appointment_Date, A.Appointment_Time, D.First_Name AS Doctor_First_Name, D.Last_Name AS Doctor_Last_Name, S.Service_Name
+SELECT 
+    A.Appointment_Date, 
+    A.Appointment_Time, 
+    D.First_Name AS Doctor_First_Name, 
+    D.Last_Name AS Doctor_Last_Name, 
+    Ptn.First_Name AS Patient_First_Name, 
+    Ptn.Last_Name AS Patient_Last_Name, 
+    S.Service_Name
 FROM Appointments A
 JOIN Doctors D ON A.Doctor_ID = D.Doctor_ID
 JOIN Prescriptions P ON A.Appointment_ID = P.Appointment_ID
 JOIN Services S ON P.Service_ID = S.Service_ID
+JOIN Patients Ptn ON A.Patient_ID = Ptn.Patient_ID
 WHERE A.Patient_ID = 2;
 
 -- Список назначений конкретного врача
-SELECT P.Prescription_Details, S.Service_Name, A.Appointment_Date
+SELECT 
+    P.Prescription_Details, 
+    S.Service_Name, 
+    A.Appointment_Date, 
+    Ptn.First_Name AS Patient_First_Name, 
+    Ptn.Last_Name AS Patient_Last_Name,
+    D.First_Name AS Doctor_First_Name, 
+    D.Last_Name AS Doctor_Last_Name
 FROM Prescriptions P
 JOIN Services S ON P.Service_ID = S.Service_ID
 JOIN Appointments A ON P.Appointment_ID = A.Appointment_ID
+JOIN Patients Ptn ON A.Patient_ID = Ptn.Patient_ID
+JOIN Doctors D ON A.Doctor_ID = D.Doctor_ID
 WHERE A.Doctor_ID = 2;
 
 -- Список всех врачей, у которых есть приёмы в комнате с номером 104
@@ -151,3 +169,16 @@ JOIN Services S ON P.Service_ID = S.Service_ID
 JOIN Appointments A ON P.Appointment_ID = A.Appointment_ID
 JOIN Doctors D ON A.Doctor_ID = D.Doctor_ID
 JOIN Patients Pt ON A.Patient_ID = Pt.Patient_ID;
+
+-- Удаление пациента с Patient_ID = 2
+DELETE FROM Patients
+WHERE Patient_ID = 2;
+
+-- Проверяем каскадное удаление записей в связанных таблицах
+SELECT * FROM Appointments
+WHERE Patient_ID = 2;
+
+SELECT * FROM Prescriptions P
+JOIN Appointments A ON P.Appointment_ID = A.Appointment_ID
+WHERE A.Patient_ID = 2;
+
